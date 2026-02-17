@@ -22,3 +22,7 @@ About decisions:
 - Record it in `ai/decisions.md` only after explicit approval (see `ai/groundrules.md`).
 
 The current task, if any, is defined in `task.md` at the repo root.
+
+Session tracking during execution:
+- For each Codex session working on this repo, create/update `ai/sessions/YYYY-MM-DD-<session_id>.md`.
+- Keep `Handoff Notes` concise and task-focused; append key completed steps and current status before finishing.
