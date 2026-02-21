@@ -7,25 +7,43 @@ import (
 	"os"
 
 	core "github.com/wastingnotime/zeroapps/core/catcare"
+	projection "github.com/wastingnotime/zeroapps/projection/catcare"
 	"github.com/wastingnotime/zeroapps/store"
 	svc "github.com/wastingnotime/zeroapps/svc/catcare"
 )
 
 func main() {
 	var (
-		commandName    = flag.String("cmd", "", "command name: register|log-weight")
-		aggregateID    = flag.String("aggregate-id", "", "aggregate id (cat id)")
-		commandID      = flag.String("command-id", "", "command id (required)")
-		expected       = flag.Int("expected-version", -1, "expected stream version (optional)")
-		name           = flag.String("name", "", "cat name (register)")
-		birthDate      = flag.String("birth-date", "", "birth date (register)")
-		at             = flag.String("at", "", "timestamp (log-weight)")
-		grams          = flag.Int("grams", 0, "grams (log-weight)")
-		notes          = flag.String("notes", "", "notes (log-weight)")
+		commandName = flag.String("cmd", "", "command name: register|log-weight|list-registered")
+		aggregateID = flag.String("aggregate-id", "", "aggregate id (cat id)")
+		commandID   = flag.String("command-id", "", "command id (required)")
+		expected    = flag.Int("expected-version", -1, "expected stream version (optional)")
+		name        = flag.String("name", "", "cat name (register)")
+		birthDate   = flag.String("birth-date", "", "birth date (register)")
+		at          = flag.String("at", "", "timestamp (log-weight)")
+		grams       = flag.Int("grams", 0, "grams (log-weight)")
+		notes       = flag.String("notes", "", "notes (log-weight)")
 	)
 	flag.Parse()
 
-	if *commandName == "" || *commandID == "" {
+	if *commandName == "" {
+		usageAndExit()
+	}
+
+	registeredCats := projection.NewRegisteredCats()
+	eventStore := store.NewInMemoryStore()
+	service := svc.NewService(eventStore, registeredCats)
+
+	if *commandName == "list-registered" {
+		cats := registeredCats.ListRegisteredCats()
+		fmt.Printf("registered_cats=%d\n", len(cats))
+		for _, cat := range cats {
+			fmt.Printf("- cat_id=%s name=%s birth_date=%s\n", cat.CatID, cat.Name, cat.BirthDate)
+		}
+		return
+	}
+
+	if *commandID == "" {
 		usageAndExit()
 	}
 
@@ -46,9 +64,6 @@ func main() {
 	if *expected >= 0 {
 		expectedVersion = expected
 	}
-
-	eventStore := store.NewInMemoryStore()
-	service := svc.NewService(eventStore)
 
 	result, err := service.HandleCommand(context.Background(), svc.CommandEnvelope{
 		AggregateID:     *aggregateID,
@@ -105,6 +120,7 @@ func usageAndExit() {
 	fmt.Println("Usage:")
 	fmt.Println("  catcare-cli -cmd register -command-id cmd-1 -name Miso -birth-date 2023-01-01")
 	fmt.Println("  catcare-cli -cmd log-weight -aggregate-id cat-cmd-1 -command-id cmd-2 -at 2026-02-14T10:00:00Z -grams 4200")
+	fmt.Println("  catcare-cli -cmd list-registered")
 	os.Exit(1)
 }
 
@@ -112,4 +128,3 @@ func fail(err error) {
 	fmt.Fprintln(os.Stderr, err)
 	os.Exit(1)
 }
-

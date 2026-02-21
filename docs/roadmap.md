@@ -11,7 +11,8 @@ Below some list of very tiny milestones.
 [x] Unit tests for Aggregate roots and aggregates (domain cores).
 [x] Concurrency for Aggregate roots.
 [x] A cli to help understand the usage of ZeroApps.
-[ ] Projections for each domain core.
+[x] Projections for each domain core.
+[ ] catcare-cli: persist local status (event store + replay/snapshots) across runs.
 [ ] CatCare: validate timestamps as RFC3339 (`BirthDate`, `At`) + tests for invalid formats.
 [ ] CatCare: `RenameCat` command + `CatRenamed` event + invariants + tests.
 [ ] CatCare: `CareItemScheduled` (mint `item_id`) + state + tests.

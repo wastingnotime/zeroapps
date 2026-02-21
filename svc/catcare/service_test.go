@@ -8,9 +8,29 @@ import (
 	"github.com/wastingnotime/zeroapps/store"
 )
 
+type projectionCall struct {
+	streamID string
+	version  int
+	event    core.Event
+}
+
+type spyProjector struct {
+	calls []projectionCall
+}
+
+func (p *spyProjector) Apply(_ context.Context, streamID string, version int, event core.Event) error {
+	p.calls = append(p.calls, projectionCall{
+		streamID: streamID,
+		version:  version,
+		event:    event,
+	})
+	return nil
+}
+
 func TestHandleCommandHappyPath(t *testing.T) {
 	eventStore := store.NewInMemoryStore()
-	service := NewService(eventStore)
+	projection := &spyProjector{}
+	service := NewService(eventStore, projection)
 
 	result, err := service.HandleCommand(context.Background(), CommandEnvelope{
 		AggregateID: "cat-1",
@@ -31,6 +51,15 @@ func TestHandleCommandHappyPath(t *testing.T) {
 	}
 	if len(result.Events) != 1 {
 		t.Fatalf("expected 1 event, got %d", len(result.Events))
+	}
+	if len(projection.calls) != 1 {
+		t.Fatalf("expected 1 projection call, got %d", len(projection.calls))
+	}
+	if projection.calls[0].streamID != "cat-1" {
+		t.Fatalf("expected stream cat-1, got %q", projection.calls[0].streamID)
+	}
+	if projection.calls[0].version != 1 {
+		t.Fatalf("expected version 1, got %d", projection.calls[0].version)
 	}
 }
 

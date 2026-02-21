@@ -21,13 +21,18 @@ type Result struct {
 	Rejection  *core.Rejection
 }
 
+type Projector interface {
+	Apply(ctx context.Context, streamID string, version int, event core.Event) error
+}
+
 type Service struct {
 	store      store.EventStore
 	maxRetries int
+	projectors []Projector
 }
 
-func NewService(store store.EventStore) *Service {
-	return &Service{store: store, maxRetries: 1}
+func NewService(store store.EventStore, projectors ...Projector) *Service {
+	return &Service{store: store, maxRetries: 1, projectors: projectors}
 }
 
 func (s *Service) HandleCommand(ctx context.Context, env CommandEnvelope) (Result, error) {
@@ -77,10 +82,31 @@ func (s *Service) HandleCommand(ctx context.Context, env CommandEnvelope) (Resul
 			return Result{}, err
 		}
 
+		if err := s.publishToProjectors(ctx, env.AggregateID, newVersion, decided); err != nil {
+			return Result{}, err
+		}
+
 		return Result{Ok: true, NewVersion: newVersion, Events: decided}, nil
 	}
 
 	return Result{}, store.ErrConcurrencyConflict
+}
+
+func (s *Service) publishToProjectors(ctx context.Context, streamID string, newVersion int, events []core.Event) error {
+	if len(s.projectors) == 0 || len(events) == 0 {
+		return nil
+	}
+
+	startVersion := newVersion - len(events) + 1
+	for index, event := range events {
+		eventVersion := startVersion + index
+		for _, projector := range s.projectors {
+			if err := projector.Apply(ctx, streamID, eventVersion, event); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func toCoreEvents(events []any) ([]core.Event, error) {
