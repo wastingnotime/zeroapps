@@ -24,4 +24,6 @@ Below some list of very tiny milestones.
 [ ] Projections: `CatCareSummary` (name, last weight, unresolved anomalies, next due care items).
 [ ] Projections: `UpcomingCareItems` (sorted by due date) + CLI query command.
 [ ] svc/store: optional snapshot loading + tail events + tests.
+[ ] infra: verify if automigration is a valid alternative.
+[ ] test: use makefile of human testing.
 [ ] TBD...
