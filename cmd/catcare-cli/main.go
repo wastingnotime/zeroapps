@@ -15,6 +15,7 @@ import (
 func main() {
 	var (
 		commandName = flag.String("cmd", "", "command name: register|log-weight|list-registered")
+		dbPath      = flag.String("db", "catcare.db", "sqlite database path")
 		aggregateID = flag.String("aggregate-id", "", "aggregate id (cat id)")
 		commandID   = flag.String("command-id", "", "command id (required)")
 		expected    = flag.Int("expected-version", -1, "expected stream version (optional)")
@@ -31,7 +32,20 @@ func main() {
 	}
 
 	registeredCats := projection.NewRegisteredCats()
-	eventStore := store.NewInMemoryStore()
+	eventStore, err := store.NewSQLiteStore(*dbPath)
+	if err != nil {
+		fail(err)
+	}
+	defer func() {
+		if err := eventStore.Close(); err != nil {
+			fail(err)
+		}
+	}()
+
+	if err := eventStore.Replay(context.Background(), registeredCats); err != nil {
+		fail(err)
+	}
+
 	service := svc.NewService(eventStore, registeredCats)
 
 	if *commandName == "list-registered" {
@@ -118,9 +132,9 @@ func eventSummary(event core.Event) string {
 
 func usageAndExit() {
 	fmt.Println("Usage:")
-	fmt.Println("  catcare-cli -cmd register -command-id cmd-1 -name Miso -birth-date 2023-01-01")
-	fmt.Println("  catcare-cli -cmd log-weight -aggregate-id cat-cmd-1 -command-id cmd-2 -at 2026-02-14T10:00:00Z -grams 4200")
-	fmt.Println("  catcare-cli -cmd list-registered")
+	fmt.Println("  catcare-cli -db ./catcare.db -cmd register -command-id cmd-1 -name Miso -birth-date 2023-01-01")
+	fmt.Println("  catcare-cli -db ./catcare.db -cmd log-weight -aggregate-id cat-cmd-1 -command-id cmd-2 -at 2026-02-14T10:00:00Z -grams 4200")
+	fmt.Println("  catcare-cli -db ./catcare.db -cmd list-registered")
 	os.Exit(1)
 }
 

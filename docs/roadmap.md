@@ -12,7 +12,7 @@ Below some list of very tiny milestones.
 [x] Concurrency for Aggregate roots.
 [x] A cli to help understand the usage of ZeroApps.
 [x] Projections for each domain core.
-[ ] catcare-cli: persist local status (event store + replay/snapshots) across runs.
+[x] catcare-cli: persist local status (SQLite event store + replay) across runs.
 [ ] CatCare: validate timestamps as RFC3339 (`BirthDate`, `At`) + tests for invalid formats.
 [ ] CatCare: `RenameCat` command + `CatRenamed` event + invariants + tests.
 [ ] CatCare: `CareItemScheduled` (mint `item_id`) + state + tests.
